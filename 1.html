@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen English Learning (CLB 5-6)</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fade-in 0.3s ease-out; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // -------------------------------------------------------------------------
+        // DATA & CONFIG
+        // -------------------------------------------------------------------------
+        const apiKey = ""; // API key will be automatically provided by the environment
+        const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+        const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        // 31 Extracted Knowledge Points from PDF
+        const vocabData = [
+            { id: 1, word: "skillet", type: "n.", definition: "Another word for frying pan", cn: "长柄平底煎锅", example: "Heat the skillet on medium heat before adding oil.", trans: "在加油之前用中火加热平底锅。" },
+            { id: 2, word: "stove", type: "n.", definition: "Large appliance used to cook food", cn: "炉灶", example: "Don't forget to turn off the stove after cooking.", trans: "做完饭后别忘了关火。" },
+            { id: 3, word: "pot", type: "n.", definition: "Deep container for boiling soup or water", cn: "深锅", example: "Fill the pot with water to boil the pasta.", trans: "往锅里装水来煮意大利面。" },
+            { id: 4, word: "baking dish", type: "n.", definition: "Dish used to cook inside the oven", cn: "烤盘", example: "Grease the baking dish so the lasagna doesn't stick.", trans: "给烤盘涂油，这样千层面就不会粘住。" },
+            { id: 5, word: "blender", type: "n.", definition: "Appliance to make smoothies or liquids", cn: "搅拌机", example: "Use the blender to make a fresh fruit smoothie.", trans: "用搅拌机制作新鲜水果冰沙。" },
+            { id: 6, word: "cutting board", type: "n.", definition: "Wood or plastic board for cutting", cn: "砧板", example: "Always wash the cutting board after cutting raw meat.", trans: "切完生肉后一定要清洗砧板。" },
+            { id: 7, word: "grinder", type: "n.", definition: "Appliance for nuts or spices", cn: "研磨机", example: "Freshly pepper from the grinder tastes better.", trans: "研磨机现磨的胡椒味道更好。" },
+            { id: 8, word: "food processor", type: "n.", definition: "Appliance to cut lots of veg/nuts", cn: "食品加工机", example: "The food processor can chop onions in seconds.", trans: "食品加工机可以在几秒钟内切碎洋葱。" },
+            { id: 9, word: "mixing bowl", type: "n.", definition: "Bowl for mixing ingredients", cn: "搅拌碗", example: "Combine flour and sugar in a large mixing bowl.", trans: "在一个大搅拌碗里混合面粉和糖。" },
+            { id: 10, word: "plastic wrap", type: "n.", definition: "Thin plastic to cover food", cn: "保鲜膜", example: "Cover the leftovers with plastic wrap.", trans: "用保鲜膜盖住剩菜。" },
+            { id: 11, word: "colander", type: "n.", definition: "Bowl with holes for washing/draining", cn: "滤器/沥水篮", example: "Drain the spaghetti in the colander.", trans: "用沥水篮滤干意大利面。" },
+            { id: 12, word: "spatula", type: "n.", definition: "Tool to stir or flip food", cn: "锅铲/抹刀", example: "Use a spatula to flip the pancakes.", trans: "用铲子翻转薄煎饼。" },
+            { id: 13, word: "cut", type: "v.", definition: "General meaning for using a knife", cn: "切", example: "Please cut the bread into thick slices.", trans: "请把面包切成厚片。" },
+            { id: 14, word: "mince", type: "v.", definition: "To cut into very small pieces (garlic)", cn: "切碎(肉末/蒜末)", example: "You need to mince three cloves of garlic.", trans: "你需要把三瓣大蒜切碎。" },
+            { id: 15, word: "slice", type: "v.", definition: "To cut into thin pieces", cn: "切片", example: "Slice the tomatoes for the sandwich.", trans: "把西红柿切片做三明治。" },
+            { id: 16, word: "chop", type: "v.", definition: "To cut into small cubes", cn: "切块/剁", example: "Chop the carrots and celery for the soup.", trans: "把胡萝卜和芹菜切块做汤。" },
+            { id: 17, word: "garnish", type: "v.", definition: "To decorate a finished dish", cn: "装饰(菜肴)", example: "Garnish the fish with lemon wedges.", trans: "用柠檬角装饰鱼。" },
+            { id: 18, word: "sprinkle", type: "v.", definition: "To drop small pieces on top", cn: "撒", example: "Sprinkle some cheese on top of the pasta.", trans: "在意大利面上撒一些奶酪。" },
+            { id: 19, word: "peel", type: "v.", definition: "To cut the skin off", cn: "削皮", example: "Peel the potatoes before boiling them.", trans: "煮土豆之前先削皮。" },
+            { id: 20, word: "season", type: "v.", definition: "To add salt/pepper/spices", cn: "调味", example: "Season the steak generously with salt.", trans: "给牛排撒上足量的盐调味。" },
+            { id: 21, word: "purée", type: "v.", definition: "To mix into a liquid form", cn: "打成泥", example: "Purée the soup until it is smooth.", trans: "把汤打成顺滑的泥状。" },
+            { id: 22, word: "pour", type: "v.", definition: "To add liquid", cn: "倒/灌", example: "Pour the milk into the batter slowly.", trans: "慢慢把牛奶倒进面糊里。" },
+            { id: 23, word: "knead", type: "v.", definition: "To mix dough with hands", cn: "揉(面)", example: "Knead the dough for ten minutes.", trans: "揉面十分钟。" },
+            { id: 24, word: "add", type: "v.", definition: "To put more ingredients in", cn: "添加", example: "Add two cups of sugar to the mixture.", trans: "向混合物中加入两杯糖。" },
+            { id: 25, word: "stir", type: "v.", definition: "To mix with a spoon/spatula", cn: "搅拌", example: "Stir the sauce constantly so it doesn't burn.", trans: "不停地搅拌酱汁以免烧焦。" },
+            { id: 26, word: "roast", type: "v.", definition: "To cook in oven at medium heat", cn: "烤(肉/菜)", example: "We will roast a chicken for dinner.", trans: "我们晚餐要烤一只鸡。" },
+            { id: 27, word: "fry", type: "v.", definition: "To cook with oil in a skillet", cn: "油炸/煎", example: "Fry the bacon until it is crispy.", trans: "把培根煎到酥脆。" },
+            { id: 28, word: "sauté", type: "v.", definition: "To cook quickly with little oil", cn: "嫩煎/炒", example: "Sauté the mushrooms in butter.", trans: "用黄油嫩煎蘑菇。" },
+            { id: 29, word: "ferment", type: "v.", definition: "To save veg for long time (healthy)", cn: "发酵", example: "You can ferment cabbage to make kimchi.", trans: "你可以发酵卷心菜来制作泡菜。" },
+            { id: 30, word: "boil", type: "v.", definition: "Cook water/soup until bubbles", cn: "煮沸", example: "Boil the water before adding the rice.", trans: "加米之前先把水煮沸。" },
+            { id: 31, word: "simmer", type: "v.", definition: "Cook at lower heat for long time", cn: "煨/炖", example: "Let the soup simmer for an hour.", trans: "让汤煨一个小时。" }
+        ];
+
+        // Dialogue Material
+        const dialogueSentences = [
+            { en: "Let's prepare the harvest dinner for the family.", cn: "我们来为家人准备丰收晚餐吧。" },
+            { en: "First, place the heavy skillet on the stove to heat up.", cn: "首先，把厚重的平底锅放在炉子上加热。" },
+            { en: "You should use the large pot to boil the water for the pasta.", cn: "你应该用大锅来烧开煮意大利面的水。" },
+            { en: "Please slice the tomatoes carefully on the cutting board.", cn: "请在砧板上仔细地把西红柿切片。" },
+            { en: "Don't forget to mince the garlic cloves into very small pieces.", cn: "别忘了把蒜瓣切成非常小的蒜末。" },
+            { en: "We will use the food processor to chop the nuts for the sauce.", cn: "我们将用食品加工机把坚果切碎做酱汁。" },
+            { en: "Add the basil and the nuts into the machine.", cn: "把罗勒和坚果放进机器里。" },
+            { en: "Pour olive oil slowly while it mixes.", cn: "搅拌时慢慢倒入橄榄油。" },
+            { en: "Season the mixture with salt and fresh pepper.", cn: "用盐和新鲜胡椒粉给混合物调味。" },
+            { en: "Use a spatula to scrape the sides of the bowl.", cn: "用刮刀刮一下碗边。" },
+            { en: "For the main dish, we will roast the chicken in a glass baking dish.", cn: "主菜方面，我们将在玻璃烤盘里烤鸡肉。" },
+            { en: "Peel the potatoes and chop them into large chunks.", cn: "把土豆削皮并切成大块。" },
+            { en: "Fry the onions until they are golden brown.", cn: "把洋葱炸到金黄。" },
+            { en: "Sauté the mushrooms quickly in a little butter.", cn: "用少量黄油快速嫩煎蘑菇。" },
+            { en: "Simmer the soup on low heat for twenty minutes.", cn: "把汤用小火炖二十分钟。" },
+            { en: "Stir the sauce gently with a wooden spoon.", cn: "用木勺轻轻搅拌酱汁。" },
+            { en: "Purée the vegetable soup in the blender until it is smooth.", cn: "用搅拌机把蔬菜汤打成顺滑的泥。" },
+            { en: "Knead the dough for the bread on the counter for ten minutes.", cn: "在台面上揉面包面团十分钟。" },
+            { en: "Cover the dough with plastic wrap to let it rise.", cn: "用保鲜膜盖住面团让它发酵。" },
+            { en: "We can also ferment some cabbage to make kimchi.", cn: "我们也可以发酵一些卷心菜来做泡菜。" },
+            { en: "Use the grinder for the fresh spices.", cn: "用研磨机研磨新鲜香料。" },
+            { en: "Drain the boiled vegetables in the colander.", cn: "用沥水篮沥干煮熟的蔬菜。" },
+            { en: "Sprinkle some cheese over the hot pasta.", cn: "在热意大利面上撒一些奶酪。" },
+            { en: "Garnish the finished dish with fresh herbs.", cn: "用新鲜香草装饰做好的菜肴。" },
+            { en: "Mix everything together in the large mixing bowl.", cn: "在大搅拌碗里把所有东西混合在一起。" },
+            { en: "Finally, cut the bread into thick pieces for serving.", cn: "最后，把面包切成厚片上桌。" }
+        ];
+
+        const cultureText = {
+            en: "The Modern Western Kitchen. In North America, the kitchen is often called the 'heart of the home'. It is not just a place for cooking, but for socializing. A key concept in design is the 'work triangle', connecting the stove, sink, and refrigerator for efficiency. Unlike some traditional Asian kitchens that rely heavily on chopping and wok frying, Western kitchens use a variety of specialized appliances. You will often find a food processor, stand mixer, and blender on the counter. Baking is also a major part of the cuisine, requiring precise measurements with cups and spoons, rather than just intuition.",
+            cn: "现代西方厨房。在北美，厨房常被称为“家庭的心脏”。它不仅是烹饪的地方，也是社交的场所。设计中的一个关键概念是“工作三角”，连接炉灶、水槽和冰箱以提高效率。与一些严重依赖切菜和炒锅的传统亚洲厨房不同，西方厨房使用各种专用电器。你经常会在台面上发现食品加工机、立式搅拌机和搅拌机。烘焙也是烹饪的重要组成部分，需要用量杯和勺子进行精确测量，而不仅仅凭直觉。"
+        };
+
+        const initialListeningQuiz = [
+            { id: 1, type: "choice", question: "What should be placed on the stove first?", options: ["The pot", "The skillet", "The blender", "The grinder"], answer: "The skillet" },
+            { id: 2, type: "choice", question: "Which appliance is used for the nuts?", options: ["Food processor", "Mixer", "Oven", "Stove"], answer: "Food processor" },
+            { id: 3, type: "tf", question: "You should slice the garlic cloves.", options: ["True", "False"], answer: "False" },
+            { id: 4, type: "fill", question: "Use a ______ to scrape the sides of the bowl.", answer: "spatula" },
+            { id: 5, type: "choice", question: "How should the potatoes be prepared?", options: ["Sliced thin", "Minced", "Chopped into chunks", "Puréed"], answer: "Chopped into chunks" },
+            { id: 6, type: "choice", question: "What is used to drain vegetables?", options: ["Pot", "Colander", "Spatula", "Bowl"], answer: "Colander" },
+            { id: 7, type: "tf", question: "The soup should boil on high heat.", options: ["True", "False"], answer: "False" },
+            { id: 8, type: "fill", question: "______ the dough for ten minutes.", answer: "Knead" },
+            { id: 9, type: "choice", question: "Where is the chicken roasted?", options: ["In a pot", "On the stove", "In a baking dish", "In a skillet"], answer: "In a baking dish" },
+            { id: 10, type: "choice", question: "What is used to cover the dough?", options: ["A towel", "Plastic wrap", "A lid", "A plate"], answer: "Plastic wrap" }
+        ];
+
+        // -------------------------------------------------------------------------
+        // HELPERS
+        // -------------------------------------------------------------------------
+
+        // Retry helper for fetch calls
+        const fetchWithRetry = async (url, options) => {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i <= 5; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        // If 5xx or specific network errors, we might want to retry
+                        // But if 400/403 (Client Error), typically we shouldn't retry unless rate limited (429)
+                        // Per instructions, we retry up to 5 times.
+                        // We throw to trigger the catch block which handles retries
+                        throw new Error(`HTTP ${res.status}: ${errText}`);
+                    }
+                    return res;
+                } catch (e) {
+                    if (i === 5) throw e; // Max retries reached
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+        };
+        
+        // PCM to WAV Converter
+        const pcmToWav = (pcmData, sampleRate = 24000) => {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+            const blockAlign = (numChannels * bitsPerSample) / 8;
+            const dataSize = pcmData.length;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            const pcmBytes = new Uint8Array(pcmData);
+            new Uint8Array(buffer, 44).set(pcmBytes);
+
+            return buffer;
+        };
+
+        // Audio Engine
+        const AudioContext = React.createContext();
+        
+        const useAudio = () => {
+            const [audioCache, setAudioCache] = React.useState(new Map());
+            const [isPlaying, setIsPlaying] = React.useState(false);
+            const currentAudioRef = React.useRef(null);
+
+            const playText = async (text) => {
+                if (isPlaying) {
+                    if (currentAudioRef.current) {
+                        currentAudioRef.current.pause();
+                        currentAudioRef.current = null;
+                    }
+                    setIsPlaying(false);
+                    return;
+                }
+
+                try {
+                    setIsPlaying(true);
+                    let audioBlob;
+
+                    if (audioCache.has(text)) {
+                        audioBlob = audioCache.get(text);
+                    } else {
+                        // Call Gemini TTS with Retry
+                        const response = await fetchWithRetry(ttsUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: text }] }],
+                                generationConfig: {
+                                    responseModalities: ["AUDIO"],
+                                    speechConfig: {
+                                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } }
+                                    }
+                                },
+                                // IMPORTANT: Add Safety Settings to BLOCK_NONE to prevent false positive filtering
+                                safetySettings: [
+                                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                                ]
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        // Enhanced Error Checking
+                        if (!data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+                            console.error("TTS API Response:", data);
+                            throw new Error("No audio data found in response");
+                        }
+
+                        // Base64 -> Uint8Array
+                        const binaryString = atob(data.candidates[0].content.parts[0].inlineData.data);
+                        const len = binaryString.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+
+                        // Convert to WAV
+                        const wavBuffer = pcmToWav(bytes);
+                        audioBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+                        
+                        setAudioCache(prev => new Map(prev).set(text, audioBlob));
+                    }
+
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    currentAudioRef.current = audio;
+                    
+                    audio.onended = () => setIsPlaying(false);
+                    audio.play();
+
+                } catch (err) {
+                    console.error("TTS Error:", err);
+                    alert(`语音生成失败: ${err.message}\n请检查您的网络或 API Key 设置。`);
+                    setIsPlaying(false);
+                }
+            };
+
+            return { playText, isPlaying };
+        };
+
+        // AI Generator Helper
+        const generateQuestions = async (type, currentData, count) => {
+            const prompt = `You are an English teacher. Based on the following vocabulary list: ${JSON.stringify(vocabData.map(v=>v.word))}. 
+            Generate EXACTLY ${count} NEW ${type} questions. 
+            Return ONLY a JSON array. 
+            JSON Schema: [{ "id": number, "type": "choice/tf/fill", "question": "string", "options": ["string"] (if choice/tf), "answer": "string" }]`;
+
+            try {
+                const response = await fetchWithRetry(genUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                // Clean markdown
+                const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                return JSON.parse(jsonStr);
+            } catch (err) {
+                console.error("AI Gen Error", err);
+                alert("生成失败，请重试。错误: " + err.message);
+                return [];
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // COMPONENTS
+        // -------------------------------------------------------------------------
+
+        const TabButton = ({ active, label, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`px-4 py-3 font-medium transition-colors duration-200 border-b-2 ${
+                    active 
+                    ? "border-blue-600 text-blue-600" 
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+            >
+                {label}
+            </button>
+        );
+
+        // 1. MATERIAL TAB
+        const MaterialTab = ({ playText }) => {
+            const [showCN, setShowCN] = React.useState(false);
+            const [showEN, setShowEN] = React.useState(true);
+            const [localVis, setLocalVis] = React.useState({}); // Local visibility overrides
+            const [dictationMode, setDictationMode] = React.useState(false);
+            const [inputs, setInputs] = React.useState({});
+            const [results, setResults] = React.useState({});
+
+            const handleCheck = (index, original) => {
+                const userText = (inputs[index] || "").trim().toLowerCase().replace(/[.,!]/g, "");
+                const targetText = original.trim().toLowerCase().replace(/[.,!]/g, "");
+                setResults({ ...results, [index]: userText === targetText });
+            };
+
+            const toggleLocal = (idx) => {
+                setLocalVis(prev => ({
+                    ...prev,
+                    [idx]: !(prev[idx] !== undefined ? prev[idx] : showEN)
+                }));
+            };
+
+            // Reset local overrides when global toggle changes
+            const handleGlobalEnToggle = () => {
+                setShowEN(!showEN);
+                setLocalVis({});
+            };
+
+            const fullText = dialogueSentences.map(s => s.en).join(" ");
+
+            return (
+                <div className="space-y-6">
+                    <div className="flex flex-wrap gap-2 mb-4 bg-white p-4 rounded shadow-sm sticky top-0 z-10">
+                        <button onClick={() => setShowCN(!showCN)} className={`px-4 py-2 rounded ${showCN ? 'bg-blue-100 text-blue-700' : 'bg-gray-200'}`}>
+                            {showCN ? "隐藏中文" : "显示中文"}
+                        </button>
+                        <button onClick={handleGlobalEnToggle} className={`px-4 py-2 rounded ${!showEN ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200'}`}>
+                            {showEN ? "隐藏英文" : "显示英文"}
+                        </button>
+                        <button onClick={() => setDictationMode(!dictationMode)} className={`px-4 py-2 rounded ${dictationMode ? 'bg-purple-100 text-purple-700' : 'bg-gray-200'}`}>
+                            {dictationMode ? "退出听写" : "听写模式"}
+                        </button>
+                        <button onClick={() => playText(fullText)} className="px-4 py-2 rounded bg-green-100 text-green-700 flex items-center gap-2">
+                            <i className="fas fa-volume-up"></i> 朗读全文
+                        </button>
+                    </div>
+
+                    <div className="space-y-4 max-w-3xl mx-auto">
+                        {dialogueSentences.map((s, idx) => {
+                            // Calculate visibility: Local override takes precedence over global setting
+                            const isEnVisible = localVis[idx] !== undefined ? localVis[idx] : showEN;
+
+                            return (
+                                <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                    <div className="flex items-start gap-4">
+                                        <button onClick={() => playText(s.en)} className="mt-1 text-blue-500 hover:text-blue-700">
+                                            <i className="fas fa-volume-up"></i>
+                                        </button>
+                                        
+                                        <div className="flex-1 space-y-2">
+                                            {/* ENGLISH / DICTATION AREA */}
+                                            {dictationMode ? (
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex gap-2">
+                                                        <input 
+                                                            type="text" 
+                                                            className="border p-2 rounded w-full focus:ring-2 focus:ring-blue-300 outline-none"
+                                                            placeholder="听写..."
+                                                            value={inputs[idx] || ""}
+                                                            onChange={(e) => setInputs({...inputs, [idx]: e.target.value})}
+                                                        />
+                                                        <button onClick={() => handleCheck(idx, s.en)} className="bg-blue-500 text-white px-3 rounded">检查</button>
+                                                    </div>
+                                                    {results[idx] !== undefined && (
+                                                        <div className={`p-2 rounded text-sm ${results[idx] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                            {results[idx] ? "正确!" : `错误。原文: ${s.en}`}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                isEnVisible && <p className="text-lg font-medium text-gray-800">{s.en}</p>
+                                            )}
+
+                                            {/* CHINESE AREA */}
+                                            <div className="flex items-center gap-2 min-h-[1.5rem]">
+                                                {showCN && (
+                                                    <>
+                                                        <span className="text-gray-600">{s.cn}</span>
+                                                        <button 
+                                                            className={`text-xs px-2 py-0.5 rounded border transition-colors ${!isEnVisible ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}
+                                                            onClick={() => toggleLocal(idx)}
+                                                            title={isEnVisible ? "隐藏这句英文" : "显示这句英文"}
+                                                        >
+                                                            EN
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. LISTENING TAB
+        const ListeningTab = ({ playText }) => {
+            const [questions, setQuestions] = React.useState(initialListeningQuiz);
+            const [userAnswers, setUserAnswers] = React.useState({});
+            const [checked, setChecked] = React.useState(false);
+            const [loading, setLoading] = React.useState(false);
+
+            const handleGenerate = async () => {
+                setLoading(true);
+                // Request 10 questions for listening
+                const newQs = await generateQuestions("listening", dialogueSentences, 10);
+                if (newQs.length > 0) {
+                    setQuestions(newQs);
+                    setUserAnswers({});
+                    setChecked(false);
+                }
+                setLoading(false);
+            };
+
+            const checkAnswers = () => setChecked(true);
+
+            return (
+                <div className="max-w-3xl mx-auto space-y-6">
+                    <div className="flex gap-4">
+                        <button onClick={handleGenerate} disabled={loading} className="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 disabled:opacity-50">
+                            {loading ? <i className="fas fa-spinner fa-spin"></i> : "AI 生成新题 (10道)"}
+                        </button>
+                        <button onClick={checkAnswers} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+                            检查答案
+                        </button>
+                    </div>
+
+                    <div className="space-y-6">
+                        {questions && questions.map((q, idx) => (
+                            <div key={idx} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">Q{idx + 1}</span>
+                                    <h3 className="font-medium text-lg">{q.question}</h3>
+                                    <button onClick={() => playText(q.question)} className="text-gray-400 hover:text-blue-500">
+                                        <i className="fas fa-volume-up"></i>
+                                    </button>
+                                </div>
+
+                                {q.type === "fill" ? (
+                                    <input 
+                                        type="text" 
+                                        className="border p-2 rounded w-full" 
+                                        placeholder="输入答案..."
+                                        onChange={(e) => setUserAnswers({...userAnswers, [idx]: e.target.value})}
+                                    />
+                                ) : (
+                                    <div className="space-y-2">
+                                        {q.options && q.options.map((opt, oid) => (
+                                            <label key={oid} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer border border-transparent hover:border-gray-200">
+                                                <input 
+                                                    type="radio" 
+                                                    name={`q-${idx}`} 
+                                                    value={opt}
+                                                    onChange={(e) => setUserAnswers({...userAnswers, [idx]: e.target.value})}
+                                                    className="w-4 h-4 text-blue-600"
+                                                />
+                                                <span>{opt}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {checked && (
+                                    <div className={`mt-3 p-3 rounded text-sm ${
+                                        (userAnswers[idx] || "").toLowerCase() === q.answer.toLowerCase() 
+                                        ? "bg-green-100 text-green-800 border-l-4 border-green-500" 
+                                        : "bg-red-100 text-red-800 border-l-4 border-red-500"
+                                    }`}>
+                                        <span className="font-bold">{((userAnswers[idx] || "").toLowerCase() === q.answer.toLowerCase()) ? "正确" : "错误"}</span>
+                                        <br/>
+                                        参考答案: {q.answer}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. CULTURE TAB
+        const CultureTab = ({ playText }) => {
+            const [showCN, setShowCN] = React.useState(false);
+            const [showEN, setShowEN] = React.useState(true);
+
+            return (
+                <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-sm">
+                    <div className="flex flex-wrap gap-2 mb-6 border-b pb-4">
+                        <button onClick={() => setShowCN(!showCN)} className={`px-4 py-2 rounded text-sm ${showCN ? 'bg-blue-100 text-blue-700' : 'bg-gray-200'}`}>
+                            {showCN ? "隐藏中文" : "显示中文"}
+                        </button>
+                        <button onClick={() => setShowEN(!showEN)} className={`px-4 py-2 rounded text-sm ${!showEN ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200'}`}>
+                            {showEN ? "隐藏英文" : "显示英文"}
+                        </button>
+                        <button onClick={() => playText(cultureText.en)} className="px-4 py-2 rounded text-sm bg-green-100 text-green-700 flex items-center gap-2">
+                            <i className="fas fa-volume-up"></i> 朗读全文
+                        </button>
+                    </div>
+
+                    <div className="space-y-6 leading-relaxed">
+                        {showEN && (
+                            <div className="text-xl font-serif text-gray-800 p-4 bg-gray-50 rounded border-l-4 border-blue-500">
+                                {cultureText.en}
+                            </div>
+                        )}
+                        {showCN && (
+                            <div className="text-md text-gray-600 p-4 border-l-4 border-gray-300">
+                                {cultureText.cn}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // 4. KNOWLEDGE TAB
+        const KnowledgeTab = ({ playText }) => (
+            <div className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-gray-100 text-gray-700 border-b">
+                            <th className="p-4 font-semibold w-16">类别</th>
+                            <th className="p-4 font-semibold w-32">单词</th>
+                            <th className="p-4 font-semibold w-24">释义</th>
+                            <th className="p-4 font-semibold">例句</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {vocabData.map((item) => (
+                            <tr key={item.id} className="hover:bg-blue-50 transition-colors">
+                                <td className="p-4 text-sm text-gray-500">{item.type}</td>
+                                <td className="p-4 font-medium text-blue-700">
+                                    <div className="flex items-center gap-2">
+                                        {item.word}
+                                        <button onClick={() => playText(item.word)} className="text-gray-300 hover:text-blue-500">
+                                            <i className="fas fa-volume-up text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td className="p-4 text-gray-800">{item.cn}</td>
+                                <td className="p-4">
+                                    <div className="space-y-1">
+                                        <div className="flex items-start gap-2 text-gray-800">
+                                            <span>{item.example}</span>
+                                            <button onClick={() => playText(item.example)} className="mt-1 text-gray-300 hover:text-blue-500">
+                                                <i className="fas fa-volume-up text-xs"></i>
+                                            </button>
+                                        </div>
+                                        <div className="text-sm text-gray-500 italic">{item.trans}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+
+        // 5. FLASHCARDS TAB
+        const FlashcardTab = ({ playText }) => {
+            const [mode, setMode] = React.useState(0); // 0: EN-CN, 1: CN-EN, 2: Sent-Trans, 3: Trans-Sent
+            const [index, setIndex] = React.useState(0);
+            const [flipped, setFlipped] = React.useState(false);
+
+            const currentItem = vocabData[index];
+            const modes = ["单词 (英 -> 中)", "单词 (中 -> 英)", "例句 (英 -> 中)", "例句 (中 -> 英)"];
+
+            const nextCard = () => {
+                setFlipped(false);
+                setTimeout(() => setIndex((prev) => (prev + 1) % vocabData.length), 200);
+            };
+
+            const prevCard = () => {
+                setFlipped(false);
+                setTimeout(() => setIndex((prev) => (prev - 1 + vocabData.length) % vocabData.length), 200);
+            };
+
+            const getFrontBack = () => {
+                switch(mode) {
+                    case 0: return { front: currentItem.word, back: currentItem.cn, speak: currentItem.word };
+                    case 1: return { front: currentItem.cn, back: currentItem.word, speak: currentItem.word };
+                    case 2: return { front: currentItem.example, back: currentItem.trans, speak: currentItem.example };
+                    case 3: return { front: currentItem.trans, back: currentItem.example, speak: currentItem.example };
+                    default: return {};
+                }
+            };
+
+            const content = getFrontBack();
+
+            return (
+                <div className="flex flex-col items-center gap-8 max-w-2xl mx-auto">
+                    {/* Mode Selector */}
+                    <div className="flex gap-2 p-1 bg-gray-200 rounded-lg">
+                        {modes.map((m, i) => (
+                            <button 
+                                key={i}
+                                onClick={() => { setMode(i); setFlipped(false); setIndex(0); }}
+                                className={`px-3 py-1 text-xs sm:text-sm rounded-md transition-all ${mode === i ? 'bg-white shadow text-blue-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                {m}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Card */}
+                    <div 
+                        className="relative w-full aspect-[3/2] perspective-1000 cursor-pointer group"
+                        onClick={() => setFlipped(!flipped)}
+                    >
+                        <div className={`relative w-full h-full text-center transition-transform duration-500 transform-style-3d shadow-xl rounded-2xl ${flipped ? 'rotate-y-180' : ''}`}>
+                            
+                            {/* FRONT */}
+                            <div className="absolute w-full h-full backface-hidden bg-white rounded-2xl flex flex-col items-center justify-center p-8 border-2 border-gray-100">
+                                <div className="text-3xl font-bold text-gray-800">{content.front}</div>
+                                <div className="text-gray-400 mt-2 text-sm">{vocabData[index].type}</div>
+                                <button 
+                                    className="absolute bottom-4 right-4 text-blue-400 hover:text-blue-600 p-2 z-10"
+                                    onClick={(e) => { e.stopPropagation(); playText(content.speak); }}
+                                >
+                                    <i className="fas fa-volume-up text-2xl"></i>
+                                </button>
+                                <div className="absolute top-4 left-4 text-gray-300 text-sm">{index + 1} / {vocabData.length}</div>
+                            </div>
+
+                            {/* BACK */}
+                            <div className="absolute w-full h-full backface-hidden bg-blue-50 rounded-2xl flex flex-col items-center justify-center p-8 rotate-y-180 border-2 border-blue-100">
+                                <div className="text-2xl font-medium text-blue-900">{content.back}</div>
+                                <button 
+                                    className="absolute bottom-4 right-4 text-blue-400 hover:text-blue-600 p-2 z-10"
+                                    onClick={(e) => { e.stopPropagation(); playText(content.speak); }}
+                                >
+                                    <i className="fas fa-volume-up text-2xl"></i>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-8">
+                        <button onClick={prevCard} className="w-12 h-12 rounded-full bg-white shadow hover:bg-gray-50 flex items-center justify-center text-gray-600">
+                            <i className="fas fa-arrow-left"></i>
+                        </button>
+                        <span className="font-mono text-gray-400">{index + 1} / {vocabData.length}</span>
+                        <button onClick={nextCard} className="w-12 h-12 rounded-full bg-white shadow hover:bg-gray-50 flex items-center justify-center text-gray-600">
+                            <i className="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 6. VOCAB EXERCISE TAB
+        const VocabExerciseTab = ({ playText }) => {
+            // Generate initial simple questions based on definitions
+            const generateInitial = () => {
+                if (!vocabData) return [];
+                return vocabData.map((v, i) => ({
+                    id: i,
+                    type: "choice",
+                    question: `Which word means: "${v.definition}"?`,
+                    options: [v.word, vocabData[(i+1)%31].word, vocabData[(i+2)%31].word, vocabData[(i+5)%31].word].sort(() => Math.random() - 0.5),
+                    answer: v.word
+                }));
+            };
+
+            const [questions, setQuestions] = React.useState(() => generateInitial());
+            const [userAnswers, setUserAnswers] = React.useState({});
+            const [checked, setChecked] = React.useState(false);
+            const [loading, setLoading] = React.useState(false);
+
+            const handleGenerate = async () => {
+                setLoading(true);
+                // Request 31 questions for vocabulary
+                const newQs = await generateQuestions("vocabulary", [], 31);
+                if (newQs.length > 0) {
+                    setQuestions(newQs);
+                    setUserAnswers({});
+                    setChecked(false);
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="max-w-3xl mx-auto space-y-6">
+                    <div className="flex gap-4">
+                        <button onClick={handleGenerate} disabled={loading} className="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 disabled:opacity-50">
+                            {loading ? <i className="fas fa-spinner fa-spin"></i> : "AI 生成新题 (31道)"}
+                        </button>
+                        <button onClick={() => setChecked(true)} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+                            检查答案
+                        </button>
+                    </div>
+
+                    <div className="grid gap-6">
+                        {questions && questions.map((q, idx) => (
+                            <div key={idx} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                                <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
+                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Q{idx + 1}</span>
+                                    {q.question}
+                                </h3>
+                                
+                                <div className="space-y-2">
+                                    {q.options && q.options.map((opt, oid) => (
+                                        <label key={oid} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded cursor-pointer border border-transparent hover:border-gray-200">
+                                            <input 
+                                                type="radio" 
+                                                name={`vq-${idx}`} 
+                                                value={opt}
+                                                onChange={(e) => setUserAnswers({...userAnswers, [idx]: e.target.value})}
+                                                className="w-4 h-4 text-blue-600"
+                                            />
+                                            <span>{opt}</span>
+                                        </label>
+                                    ))}
+                                </div>
+
+                                {checked && (
+                                    <div className={`mt-3 p-3 rounded text-sm ${
+                                        (userAnswers[idx] || "") === q.answer 
+                                        ? "bg-green-100 text-green-800" 
+                                        : "bg-red-100 text-red-800"
+                                    }`}>
+                                        {userAnswers[idx] === q.answer ? "正确" : `错误. 正确答案: ${q.answer}`}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // -------------------------------------------------------------------------
+        // MAIN APP
+        // -------------------------------------------------------------------------
+        const App = () => {
+            const [activeTab, setActiveTab] = React.useState('material');
+            const { playText } = useAudio();
+
+            const renderContent = () => {
+                switch(activeTab) {
+                    case 'material': return <MaterialTab playText={playText} />;
+                    case 'listening': return <ListeningTab playText={playText} />;
+                    case 'culture': return <CultureTab playText={playText} />;
+                    case 'knowledge': return <KnowledgeTab playText={playText} />;
+                    case 'flashcards': return <FlashcardTab playText={playText} />;
+                    case 'vocab': return <VocabExerciseTab playText={playText} />;
+                    default: return <MaterialTab playText={playText} />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen pb-12">
+                    {/* Header */}
+                    <div className="bg-white shadow-sm border-b sticky top-0 z-20">
+                        <div className="max-w-5xl mx-auto">
+                            <h1 className="text-2xl font-bold text-center py-4 text-gray-800">
+                                <i className="fas fa-utensils mr-2 text-orange-500"></i>
+                                Kitchen & Cooking Vocabulary
+                            </h1>
+                            <div className="flex overflow-x-auto no-scrollbar justify-center space-x-1 sm:space-x-4 px-4">
+                                <TabButton active={activeTab === 'material'} label="素材学习" onClick={() => setActiveTab('material')} />
+                                <TabButton active={activeTab === 'listening'} label="听力练习" onClick={() => setActiveTab('listening')} />
+                                <TabButton active={activeTab === 'culture'} label="文化背景" onClick={() => setActiveTab('culture')} />
+                                <TabButton active={activeTab === 'knowledge'} label="知识点表" onClick={() => setActiveTab('knowledge')} />
+                                <TabButton active={activeTab === 'flashcards'} label="单词卡片" onClick={() => setActiveTab('flashcards')} />
+                                <TabButton active={activeTab === 'vocab'} label="词汇测验" onClick={() => setActiveTab('vocab')} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <main className="max-w-5xl mx-auto p-4 sm:p-6 mt-4 animate-fade-in">
+                        {renderContent()}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
